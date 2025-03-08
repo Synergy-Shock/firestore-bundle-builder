@@ -1,3 +1,7 @@
+## Version 0.1.7
+
+Fix permission
+
 ## Version 0.1.6
 
 Add new permission request to access the buckets

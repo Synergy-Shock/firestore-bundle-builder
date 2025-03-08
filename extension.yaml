@@ -25,8 +25,6 @@ roles:
     reason: Allows the extension to read configuration and build bundles from Firestore.
   - role: storage.objectAdmin
     reason: Allows the extension to save built bundles in Cloud Storage
-  - role: storage.buckets.get
-    reason: Allows the extension to read from the Cloud Storage bucket
 
 # Learn about the `resources` field in the docs
 resources:
