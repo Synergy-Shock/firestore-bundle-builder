@@ -1,5 +1,9 @@
 ## Version 0.1.4
 
+Bump node version and improve code to handle fileCache better
+
+## Version 0.1.4
+
 Republish to stabilize extension.
 
 ## Version 0.1.3
