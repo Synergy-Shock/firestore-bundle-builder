@@ -2,7 +2,7 @@
 
 name: firestore-bundle-builder-v2
 specVersion: v1beta
-version: 0.1.7
+version: 0.1.8
 license: Apache-2.0
 
 displayName: Firestore Bundle Builder v2
@@ -25,6 +25,8 @@ roles:
     reason: Allows the extension to read configuration and build bundles from Firestore.
   - role: storage.objectAdmin
     reason: Allows the extension to save built bundles in Cloud Storage
+  - role: storage.legacyBucketReader
+    reason: Allows the extension to read from the Cloud Storage bucket
 
 # Learn about the `resources` field in the docs
 resources:

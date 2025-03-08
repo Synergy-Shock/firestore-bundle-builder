@@ -1,3 +1,7 @@
+## Version 0.1.8
+
+Add role storage.legacyBucketReader for firebase buckets
+
 ## Version 0.1.7
 
 Fix permission
