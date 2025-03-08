@@ -1,0 +1,39 @@
+[debug] [2025-03-08T17:11:23.383Z] ----------------------------------------------------------------------
+[debug] [2025-03-08T17:11:23.388Z] Command:       /Users/lucianoganga/.n/bin/node /Users/lucianoganga/.n/bin/firebase ext:dev:upload synergyshock/firestore-bundle-builder-v2
+[debug] [2025-03-08T17:11:23.388Z] CLI Version:   13.15.1
+[debug] [2025-03-08T17:11:23.388Z] Platform:      darwin
+[debug] [2025-03-08T17:11:23.389Z] Node Version:  v20.12.2
+[debug] [2025-03-08T17:11:23.389Z] Time:          Sat Mar 08 2025 14:11:23 GMT-0300 (Argentina Standard Time)
+[debug] [2025-03-08T17:11:23.389Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-03-08T17:11:23.392Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-03-08T17:11:23.393Z] > authorizing via signed-in user (luciano@synergyshock.com)
+[debug] [2025-03-08T17:11:23.393Z] > refreshing access token with scopes: []
+[debug] [2025-03-08T17:11:23.394Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2025-03-08T17:11:23.394Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-03-08T17:11:23.626Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2025-03-08T17:11:23.626Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2025-03-08T17:11:23.642Z] >>> [apiv2][query] GET https://firebaseextensionspublisher.googleapis.com/v1beta/projects/-/publisherProfile publisherId=synergyshock
+[debug] [2025-03-08T17:11:24.915Z] <<< [apiv2][status] GET https://firebaseextensionspublisher.googleapis.com/v1beta/projects/-/publisherProfile 200
+[debug] [2025-03-08T17:11:24.916Z] <<< [apiv2][body] GET https://firebaseextensionspublisher.googleapis.com/v1beta/projects/-/publisherProfile {"name":"projects/300774645895/publisherProfile","publisherId":"synergyshock","registerTime":"2025-03-08T13:30:14.174498Z","displayName":"Synergy Shock","websiteUri":"https://www.synergyshock.com","state":"ACTIVE"}
+[debug] [2025-03-08T17:11:24.917Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/300774645895 [none]
+[debug] [2025-03-08T17:11:25.325Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/300774645895 200
+[debug] [2025-03-08T17:11:25.326Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/300774645895 {"projectId":"synergyshock-fe8ce","projectNumber":"300774645895","displayName":"synergyshock-fe8ce","name":"projects/synergyshock-fe8ce","resources":{"hostingSite":"synergyshock-fe8ce"},"state":"ACTIVE","etag":"1_5078a1fc-8dbf-4e02-8fbb-eb851967ba76"}
+[debug] [2025-03-08T17:11:25.326Z] Checking if latest publisher TOS has been accepted by 300774645895...
+[debug] [2025-03-08T17:11:25.326Z] >>> [apiv2][query] GET https://firebaseextensionstos-pa.googleapis.com/v1/projects/300774645895/publishertos [none]
+[debug] [2025-03-08T17:11:26.560Z] <<< [apiv2][status] GET https://firebaseextensionstos-pa.googleapis.com/v1/projects/300774645895/publishertos 200
+[debug] [2025-03-08T17:11:26.560Z] <<< [apiv2][body] GET https://firebaseextensionstos-pa.googleapis.com/v1/projects/300774645895/publishertos {"name":"projects/300774645895/publishertos","lastAcceptedVersion":"v1","lastAcceptedTime":"2025-03-08T13:41:39.837211Z","latestTosVersion":"v1"}
+[debug] [2025-03-08T17:11:26.561Z] Already accepted version v1 of Extensions publisher TOS.
+[debug] [2025-03-08T17:11:26.565Z] >>> [apiv2][query] GET https://firebaseextensionspublisher.googleapis.com/v1beta/publishers/synergyshock/extensions/firestore-bundle-builder-v2 [none]
+[debug] [2025-03-08T17:11:26.999Z] <<< [apiv2][status] GET https://firebaseextensionspublisher.googleapis.com/v1beta/publishers/synergyshock/extensions/firestore-bundle-builder-v2 200
+[debug] [2025-03-08T17:11:27.000Z] <<< [apiv2][body] GET https://firebaseextensionspublisher.googleapis.com/v1beta/publishers/synergyshock/extensions/firestore-bundle-builder-v2 {"name":"publishers/synergyshock/extensions/firestore-bundle-builder-v2","ref":"synergyshock/firestore-bundle-builder-v2","state":"PUBLISHED","createTime":"2025-03-08T13:46:36.343770Z","publisher":{"displayName":"Synergy Shock"},"repoUri":"https://github.com/Synergy-Shock/firestore-bundle-builder"}
+[debug] [2025-03-08T17:11:27.002Z] >>> [apiv2][query] GET https://firebaseextensionspublisher.googleapis.com/v1beta/publishers/synergyshock/extensions/firestore-bundle-builder-v2/versions/latest [none]
+[debug] [2025-03-08T17:11:27.258Z] <<< [apiv2][status] GET https://firebaseextensionspublisher.googleapis.com/v1beta/publishers/synergyshock/extensions/firestore-bundle-builder-v2/versions/latest 400
+[debug] [2025-03-08T17:11:27.258Z] <<< [apiv2][body] GET https://firebaseextensionspublisher.googleapis.com/v1beta/publishers/synergyshock/extensions/firestore-bundle-builder-v2/versions/latest {"error":{"code":400,"message":"ExtensionVersion name `publishers/synergyshock/extensions/firestore-bundle-builder-v2` is invalid, must be of form `publishers/*/extensions/*/versions/*`","status":"INVALID_ARGUMENT"}}
+[info] 
+Extension: synergyshock/firestore-bundle-builder-v2
+State: Prerelease
+Latest Version: -
+Version in Extensions Hub: -
+Source in GitHub: https://github.com/Synergy-Shock/firestore-bundle-builder (use --repo and --root to modify)
+

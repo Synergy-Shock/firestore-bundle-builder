@@ -2,7 +2,7 @@
 
 name: firestore-bundle-builder-v2
 specVersion: v1beta
-version: 0.1.4
+version: 0.1.5
 license: Apache-2.0
 
 displayName: Firestore Bundle Builder v2
@@ -35,7 +35,9 @@ resources:
     properties:
       location: us-central1
       httpsTrigger: {}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
+      timeout: 120s
+      availableMemoryMb: 512
 
 # Learn about the `params` field in the docs
 params:
