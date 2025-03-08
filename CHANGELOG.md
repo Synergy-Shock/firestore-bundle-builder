@@ -1,3 +1,7 @@
+## Version 0.1.6
+
+Add new permission request to access the buckets
+
 ## Version 0.1.5
 
 Bump node version and improve code to handle fileCache better

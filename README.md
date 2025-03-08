@@ -68,3 +68,5 @@ This extension will operate with the following project IAM roles:
 * datastore.user (Reason: Allows the extension to read configuration and build bundles from Firestore.)
 
 * storage.objectAdmin (Reason: Allows the extension to save built bundles in Cloud Storage)
+
+* storage.buckets.get (Reason: Allows the extension to read from the Cloud Storage bucket)
