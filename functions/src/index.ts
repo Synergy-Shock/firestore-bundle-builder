@@ -8,7 +8,6 @@
 
 import * as admin from "firebase-admin";
 import * as functions from "firebase-functions";
-import { Timestamp } from "@google-cloud/firestore";
 import { BundleSpec, build, ParamsSpec } from "./build_bundle";
 import { Storage } from "@google-cloud/storage";
 import { createGzip } from "zlib";
