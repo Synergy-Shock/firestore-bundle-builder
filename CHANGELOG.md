@@ -1,3 +1,7 @@
+## Version 0.1.9
+
+Split index.ts into modules for easier code navigation. Improve the way big bundles are retrieved to the consumer
+
 ## Version 0.1.8
 
 Add role storage.legacyBucketReader for firebase buckets
