@@ -1,3 +1,7 @@
+## Version 0.2.1
+
+Go back to functions v1 and keep NodeJS 22
+
 ## Version 0.2.0
 
 Upgrade to functions v2 and NodeJS 22
