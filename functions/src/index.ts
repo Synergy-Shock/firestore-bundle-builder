@@ -7,6 +7,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { onRequest } from "firebase-functions/v2/https";
 import * as functions from "firebase-functions";
 import { BundleBuilder } from "./bundleBuilder";
 import { SpecManager } from "./specManager";
@@ -31,34 +32,48 @@ const storageService = new StorageService({
   storagePrefix: STORAGE_PREFIX,
 });
 
-// Flag to track if the service is ready
-let isServiceReady = false;
-
-// Verify the bucket is accessible on startup
-storageService
-  .validateBucket()
-  .then((isValid) => {
-    if (!isValid) {
-      functions.logger.error(
-        `Storage bucket ${BUNDLE_STORAGE_BUCKET} is not valid or accessible.`
-      );
-      return;
-    }
-    isServiceReady = true;
-    functions.logger.info(
-      "Bundle service initialization complete - ready to serve requests"
-    );
-  })
-  .catch((error) => {
-    functions.logger.error("Failed to validate storage bucket", error);
-  });
-
 // Create the bundle server
 const bundleServer = new BundleServer(
   storageService,
   bundleBuilder,
   specManager
 );
+
+// Track initialization state
+let initializationPromise: Promise<boolean> | null = null;
+let isServiceReady = false;
+
+// Initialize on demand when the first request comes in
+function ensureInitialized(): Promise<boolean> {
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  functions.logger.info("Starting service initialization...");
+
+  // Create a new initialization promise
+  initializationPromise = storageService
+    .validateBucket()
+    .then((isValid) => {
+      if (!isValid) {
+        functions.logger.error(
+          `Storage bucket ${BUNDLE_STORAGE_BUCKET} is not valid or accessible.`
+        );
+        return false;
+      }
+      isServiceReady = true;
+      functions.logger.info(
+        "Bundle service initialization complete - ready to serve requests"
+      );
+      return true;
+    })
+    .catch((error) => {
+      functions.logger.error("Failed to validate storage bucket", error);
+      return false;
+    });
+
+  return initializationPromise;
+}
 
 /**
  * Cloud Function to serve bundle building http requests.
@@ -71,19 +86,41 @@ const bundleServer = new BundleServer(
  * there is a valid bundle file saved in GCS, and return that if yes. It would
  * save the built bundle file GCS, if a valid bundle file could not be found.
  */
-export const serve = functions.handler.https.onRequest(
+export const serve = onRequest(
+  {
+    memory: "512MiB",
+    timeoutSeconds: 540,
+    cors: true,
+  },
   async (req, res): Promise<any> => {
-    // Check if service is ready before handling the request
-    if (!isServiceReady) {
+    const requestId = Math.random().toString(36).substring(2, 15);
+
+    try {
+      // Initialize on first request or after failure
+      const initialized = await ensureInitialized();
+
+      if (!initialized) {
+        functions.logger.error(
+          `[${requestId}] Service not ready - bucket validation failed`
+        );
+        res
+          .status(503) // Service Unavailable rather than 500
+          .send(
+            "Service initialization failed. Please check server logs and try again later."
+          );
+        return;
+      }
+
+      // Service is ready, handle the request
+      return bundleServer.handleRequest(req, res);
+    } catch (error) {
       functions.logger.error(
-        "Service not ready - storage bucket validation failed"
+        `[${requestId}] Unexpected error during initialization or request handling:`,
+        error
       );
       res
         .status(500)
-        .send("Service not initialized properly. Please check server logs.");
-      return;
+        .send("An unexpected error occurred. Please try again later.");
     }
-
-    return bundleServer.handleRequest(req, res);
   }
 );

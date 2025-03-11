@@ -1,3 +1,7 @@
+## Version 0.2.0
+
+Upgrade to functions v2 and NodeJS 22
+
 ## Version 0.1.9
 
 Split index.ts into modules for easier code navigation. Improve the way big bundles are retrieved to the consumer

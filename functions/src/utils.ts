@@ -1,4 +1,5 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v2";
+import { ServerResponse } from "http";
 import { ParamsSpec } from "./build_bundle";
 
 /**
@@ -67,17 +68,17 @@ export function createHash(str: string): string {
  * Sets appropriate cache control headers based on bundle specification
  */
 export function setCacheControlHeaders(
-  res: functions.Response,
+  res: ServerResponse,
   serverCache?: number,
   clientCache?: number
 ): void {
   if (serverCache || clientCache) {
     const maxAgeString = clientCache ? `, max-age=${clientCache}` : "";
     const sMaxAgeString = serverCache ? `, s-maxage=${serverCache}` : "";
-    res.set("cache-control", `public${maxAgeString}${sMaxAgeString}`);
+    res.setHeader("Cache-Control", `public${maxAgeString}${sMaxAgeString}`);
   } else {
     // Default to no-cache if not specified
-    res.set("cache-control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache");
   }
 }
 
