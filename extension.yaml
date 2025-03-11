@@ -41,7 +41,6 @@ resources:
       serviceConfig:
         availableMemory: 512M
         timeoutSeconds: 540
-      httpsTrigger: {}
 
 # Learn about the `params` field in the docs
 params:
