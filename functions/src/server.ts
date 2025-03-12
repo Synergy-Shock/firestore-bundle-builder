@@ -56,6 +56,7 @@ export class BundleServer {
       query: req.query,
       userAgent: req.headers["user-agent"],
       referer: req.headers["referer"],
+      method: req.method,
     });
 
     // Set a default timeout to prevent request timeouts from killing connections
@@ -72,8 +73,11 @@ export class BundleServer {
       // Set CORS headers for browser compatibility
       res.setHeader("Access-Control-Allow-Origin", "*");
       if (req.method === "OPTIONS") {
-        res.setHeader("Access-Control-Allow-Methods", "GET");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        res.setHeader("Access-Control-Allow-Methods", "GET, PUT");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, Authorization"
+        );
         res.setHeader("Access-Control-Max-Age", "3600");
         res.statusCode = 204;
         res.end("");
@@ -139,6 +143,57 @@ export class BundleServer {
       // Extract parameter values from query string
       const paramValues = filterQuery(req.query, bundleSpec.params || {});
       functions.logger.debug(`[${requestId}] Parameter values:`, paramValues);
+
+      // Handle PUT request to force rebuild bundle
+      if (req.method === "PUT") {
+        try {
+          const result = await this.forceBuildBundle(
+            bundleId,
+            bundleSpec,
+            paramValues,
+            requestId
+          );
+
+          // Clear the keep-alive timeout
+          clearTimeout(keepAliveTimeout);
+
+          // Send successful response
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(
+            JSON.stringify({
+              success: true,
+              message: "Bundle rebuilt and cached successfully",
+              size: result.size,
+              cacheKey: result.cacheKey,
+              time: result.time,
+            })
+          );
+
+          functions.logger.info(
+            `[${requestId}] Forced rebuild completed in ${
+              Date.now() - requestStartTime
+            }ms`
+          );
+          return;
+        } catch (error) {
+          functions.logger.error(
+            `[${requestId}] Error in forced rebuild:`,
+            error
+          );
+          res.statusCode = 500;
+          res.end(
+            JSON.stringify({
+              success: false,
+              message: `Error rebuilding bundle: ${error.message}`,
+            })
+          );
+
+          // Clear the keep-alive timeout
+          clearTimeout(keepAliveTimeout);
+          return;
+        }
+      }
 
       // Set cache control headers
       setCacheControlHeaders(
@@ -332,9 +387,15 @@ export class BundleServer {
         );
         const buildDuration = Date.now() - buildStartTime;
 
-        functions.logger.info(
-          `[${requestId}] Bundle built in ${buildDuration}ms, size: ${bundleBuffer.length} bytes`
-        );
+        if ((bundleBuffer as any)._builtByAnotherInstance) {
+          functions.logger.info(
+            `[${requestId}] Bundle retrieved from another instance in ${buildDuration}ms, size: ${bundleBuffer.length} bytes`
+          );
+        } else {
+          functions.logger.info(
+            `[${requestId}] Bundle built in ${buildDuration}ms, size: ${bundleBuffer.length} bytes`
+          );
+        }
 
         // Clear the keep-alive timeout before serving bundle
         const timeoutToClean = keepAliveTimeout;
@@ -403,6 +464,70 @@ export class BundleServer {
     }
   }
 
+  /**
+   * Forces a bundle rebuild and saves it to storage
+   * Used by PUT requests to refresh cached bundles
+   */
+  private async forceBuildBundle(
+    bundleId: string,
+    bundleSpec: any,
+    paramValues: { [key: string]: any },
+    requestId: string
+  ): Promise<{ size: number; cacheKey: string; time: number }> {
+    const startTime = Date.now();
+
+    // Create a cache key for this bundle request
+    const cacheKey = this.bundleBuilder.createCacheKey(bundleId, paramValues);
+
+    functions.logger.info(
+      `[${requestId}] Forcing rebuild of bundle: ${bundleId} with cache key: ${cacheKey}`
+    );
+
+    try {
+      // Build the bundle directly, bypassing any in-memory cache
+      const bundleBuffer = await this.bundleBuilder.buildBundle(
+        bundleId,
+        bundleSpec,
+        paramValues,
+        requestId
+      );
+
+      // Save to storage
+      const saveSuccess = await this.storageService.saveBundle(
+        bundleId,
+        paramValues,
+        bundleBuffer,
+        requestId
+      );
+
+      if (!saveSuccess) {
+        throw new Error("Failed to save rebuilt bundle to storage");
+      }
+
+      const duration = Date.now() - startTime;
+
+      functions.logger.info(
+        `[${requestId}] Successfully rebuilt and saved bundle ${bundleId}, size: ${bundleBuffer.length} bytes in ${duration}ms`
+      );
+
+      return {
+        size: bundleBuffer.length,
+        cacheKey: cacheKey,
+        time: duration,
+      };
+    } catch (error) {
+      functions.logger.error(
+        `[${requestId}] Error during forced rebuild of ${bundleId}:`,
+        error
+      );
+
+      // Clean up the in-progress tracker on error
+      this.bundleBuilder.unregisterBuild(cacheKey);
+
+      throw error;
+    }
+  }
+
   private async serveBundle(
     bundleBuffer: Buffer,
     bundleId: string,
@@ -420,7 +545,8 @@ export class BundleServer {
       bundleSpec &&
       bundleSpec.fileCache &&
       typeof bundleSpec.fileCache === "number" &&
-      paramValues
+      paramValues &&
+      !(bundleBuffer as any)._builtByAnotherInstance // Don't re-save if it was already built by another instance
     ) {
       // Don't await this - it will run in parallel with sending the response
       const cacheWriteStartTime = Date.now();

@@ -272,7 +272,7 @@ export class BundleBuilder {
 
         // Poll for completion (simple approach)
         let attempts = 0;
-        const maxAttempts = 270; // 270 attempts x 2 seconds = ~9 minutes max wait (matching timeoutSeconds)
+        const maxAttempts = 270;
 
         while (attempts < maxAttempts) {
           // Wait 2 seconds between checks
@@ -306,6 +306,15 @@ export class BundleBuilder {
                 const buffer = await this.storageService.downloadFile(
                   bundlePath
                 );
+
+                // Add a property to track this was built by another instance
+                // This won't affect the buffer data, but will help in logging
+                Object.defineProperty(buffer, "_builtByAnotherInstance", {
+                  value: true,
+                  enumerable: false,
+                  configurable: true,
+                });
+
                 return buffer;
               }
             } catch (storageError) {

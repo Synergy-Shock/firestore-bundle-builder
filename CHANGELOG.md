@@ -1,3 +1,7 @@
+## Version 0.2.3
+
+Minor improvements + support method PUT in a bundle URL to force the fileCache creation
+
 ## Version 0.2.2
 
 Working version
