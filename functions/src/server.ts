@@ -142,7 +142,10 @@ export class BundleServer {
 
       // Extract parameter values from query string
       const paramValues = filterQuery(req.query, bundleSpec.params || {});
-      functions.logger.debug(`[${requestId}] Parameter values:`, paramValues);
+      functions.logger.debug(
+        `[${requestId}] Forcing rebuild with parameter values:`,
+        paramValues
+      );
 
       // Handle PUT request to force rebuild bundle
       if (req.method === "PUT") {
@@ -202,7 +205,7 @@ export class BundleServer {
         bundleSpec.clientCache
       );
 
-      // Create a cache key for this bundle request (including params)
+      // Create a cache key for this bundle request
       const cacheKey = this.bundleBuilder.createCacheKey(bundleId, paramValues);
 
       // Try to serve from file cache if enabled
@@ -484,12 +487,14 @@ export class BundleServer {
     );
 
     try {
-      // Build the bundle directly, bypassing any in-memory cache
+      // Build the bundle directly with forceRebuild=true to bypass file cache
       const bundleBuffer = await this.bundleBuilder.buildBundle(
         bundleId,
         bundleSpec,
         paramValues,
-        requestId
+        requestId,
+        null, // response object not needed
+        true // forceRebuild=true to bypass file cache
       );
 
       // Save to storage

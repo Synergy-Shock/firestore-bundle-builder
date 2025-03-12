@@ -1,4 +1,3 @@
-import * as functions from "firebase-functions/v2";
 import { ServerResponse } from "http";
 import { ParamsSpec } from "./build_bundle";
 

@@ -179,7 +179,8 @@ export class BundleBuilder {
     bundleSpec: BundleSpec,
     paramValues: { [key: string]: any },
     requestId: string,
-    res?: any // Add optional response object parameter for sending heartbeats
+    res?: any, // Add optional response object parameter for sending heartbeats
+    forceRebuild: boolean = false // Add forceRebuild parameter with default false
   ): Promise<Buffer> {
     // Create a cache key from the bundle ID and parameters
     const cacheKey = this.createCacheKey(bundleId, paramValues);
@@ -187,61 +188,68 @@ export class BundleBuilder {
 
     try {
       // Check if the bundle already exists in storage
-      try {
-        const exists = await this.storageService.fileExists(bundlePath);
+      if (!forceRebuild) {
+        // Only check file cache if we're not forcing a rebuild
+        try {
+          const exists = await this.storageService.fileExists(bundlePath);
 
-        if (exists) {
-          functions.logger.info(
-            `[${requestId}] Bundle ${cacheKey} already exists in storage, checking if it's valid`
-          );
-
-          // Get cache max age from bundleSpec
-          const maxAgeSeconds = bundleSpec.fileCache || 0;
-
-          // If fileCache is specified and greater than 0, check if the file is still valid
-          if (maxAgeSeconds > 0) {
-            // Check if the file is recent enough to use
-            const metadata = await this.storageService.getFileMetadata(
-              bundlePath
-            );
-            if (!metadata || !metadata.timeCreated) {
-              functions.logger.warn(
-                `[${requestId}] Could not get metadata for bundle ${cacheKey}`
-              );
-            } else {
-              const createTime = new Date(metadata.timeCreated).getTime();
-              const fileAge = Date.now() - createTime;
-              const maxAgeMs = maxAgeSeconds * 1000;
-
-              // If the file is recent enough, just download and return it
-              if (fileAge < maxAgeMs) {
-                functions.logger.info(
-                  `[${requestId}] Bundle ${cacheKey} is still valid (age: ${Math.round(
-                    fileAge / 1000
-                  )}s, max age: ${maxAgeSeconds}s), using cached version`
-                );
-                const buffer = await this.storageService.downloadFile(
-                  bundlePath
-                );
-                return buffer;
-              } else {
-                functions.logger.info(
-                  `[${requestId}] Bundle ${cacheKey} is too old (age: ${Math.round(
-                    fileAge / 1000
-                  )}s, max age: ${maxAgeSeconds}s), rebuilding`
-                );
-              }
-            }
-          } else {
+          if (exists) {
             functions.logger.info(
-              `[${requestId}] No fileCache setting or set to 0 for ${cacheKey}, rebuilding regardless of age`
+              `[${requestId}] Bundle ${cacheKey} already exists in storage, checking if it's valid`
             );
+
+            // Get cache max age from bundleSpec
+            const maxAgeSeconds = bundleSpec.fileCache || 0;
+
+            // If fileCache is specified and greater than 0, check if the file is still valid
+            if (maxAgeSeconds > 0) {
+              // Check if the file is recent enough to use
+              const metadata = await this.storageService.getFileMetadata(
+                bundlePath
+              );
+              if (!metadata || !metadata.timeCreated) {
+                functions.logger.warn(
+                  `[${requestId}] Could not get metadata for bundle ${cacheKey}`
+                );
+              } else {
+                const createTime = new Date(metadata.timeCreated).getTime();
+                const fileAge = Date.now() - createTime;
+                const maxAgeMs = maxAgeSeconds * 1000;
+
+                // If the file is recent enough, just download and return it
+                if (fileAge < maxAgeMs) {
+                  functions.logger.info(
+                    `[${requestId}] Bundle ${cacheKey} is still valid (age: ${Math.round(
+                      fileAge / 1000
+                    )}s, max age: ${maxAgeSeconds}s), using cached version`
+                  );
+                  const buffer = await this.storageService.downloadFile(
+                    bundlePath
+                  );
+                  return buffer;
+                } else {
+                  functions.logger.info(
+                    `[${requestId}] Bundle ${cacheKey} is too old (age: ${Math.round(
+                      fileAge / 1000
+                    )}s, max age: ${maxAgeSeconds}s), rebuilding`
+                  );
+                }
+              }
+            } else {
+              functions.logger.info(
+                `[${requestId}] No fileCache setting or set to 0 for ${cacheKey}, rebuilding regardless of age`
+              );
+            }
           }
+        } catch (storageError) {
+          // If there's an error checking storage, just continue with the build
+          functions.logger.warn(
+            `[${requestId}] Error checking if bundle exists in storage: ${storageError.message}`
+          );
         }
-      } catch (storageError) {
-        // If there's an error checking storage, just continue with the build
-        functions.logger.warn(
-          `[${requestId}] Error checking if bundle exists in storage: ${storageError.message}`
+      } else {
+        functions.logger.info(
+          `[${requestId}] Force rebuild requested for ${cacheKey}, bypassing file cache check`
         );
       }
 
