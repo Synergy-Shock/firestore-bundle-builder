@@ -30,6 +30,7 @@ export function sortQuery(qs: { [key: string]: any }): string {
 /**
  * Creates a valid storage path for bundle files, with proper character encoding
  * to avoid issues with special characters like question marks.
+ * Uses a combination of query hash and sorted parameter hash for consistency.
  *
  * Note: The query parameters should already be filtered by filterQuery to include
  * only relevant parameters defined in the bundle spec.
@@ -42,11 +43,19 @@ export function createStoragePath(
   // Sanitize bundle ID to avoid path issues
   const sanitizedBundleId = bundleId.replace(/[^a-zA-Z0-9_-]/g, "_");
 
-  // Create a unique hash for query parameters instead of including them in the path
+  // Create a unique hash for query parameters
   const queryString = sortQuery(query);
   const queryHash = createHash(queryString);
 
-  return `${storagePrefix}/${sanitizedBundleId}_${queryHash}`;
+  // Create a standardized hash for sorted parameters (similar to BundleBuilder.createCacheKey)
+  const sortedParams = Object.keys(query)
+    .sort()
+    .map((key) => `${key}:${JSON.stringify(query[key])}`)
+    .join(",");
+  const sortedParamsHash = createHash(sortedParams);
+
+  // Use both hashes in the filename for consistency across all services
+  return `${storagePrefix}/${sanitizedBundleId}_${queryHash}_${sortedParamsHash}`;
 }
 
 /**

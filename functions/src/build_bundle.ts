@@ -151,42 +151,137 @@ export async function build(
   db: Firestore,
   bundleId: string,
   bundleSpec: BundleSpec,
-  paramValues: { [key: string]: any }
+  paramValues: { [key: string]: any },
+  requestId?: string // Make optional to maintain backward compatibility
 ): Promise<BundleBuilder> {
+  const buildStartTime = Date.now();
+
+  // Use a logging prefix if requestId is provided
+  const logPrefix = requestId ? `[${requestId}]` : "";
+
+  if (logPrefix) {
+    console.debug(`${logPrefix} Starting bundle build for ${bundleId}`);
+  }
+
   const bundle = db.bundle(bundleId);
   const promises: Promise<void>[] = [];
 
+  // Process individual documents
+  const docsStartTime = Date.now();
   const docs = bundleSpec.docs || [];
+
+  if (logPrefix && docs.length > 0) {
+    console.debug(`${logPrefix} Adding ${docs.length} documents to bundle`);
+  }
+
   for (const docName of docs) {
+    const pathStartTime = Date.now();
     const resolvedDocName = parameterizePath(
       docName,
       bundleSpec.params || {},
       paramValues
     );
-    console.debug("bundle.add [doc]:", resolvedDocName);
-    promises.push(
-      db
-        .doc(resolvedDocName)
-        .get()
-        .then((snap) => {
-          bundle.add(snap);
-        })
+    const pathResolveTime = Date.now() - pathStartTime;
+
+    if (logPrefix) {
+      console.debug(
+        `${logPrefix} bundle.add [doc]: ${resolvedDocName} (path resolution: ${pathResolveTime}ms)`
+      );
+    } else {
+      console.debug("bundle.add [doc]:", resolvedDocName);
+    }
+
+    const docPromise = db
+      .doc(resolvedDocName)
+      .get()
+      .then((snap) => {
+        const docGetTime = Date.now() - pathStartTime;
+        if (logPrefix) {
+          console.debug(
+            `${logPrefix} Retrieved document ${resolvedDocName} in ${docGetTime}ms`
+          );
+        }
+        bundle.add(snap);
+      });
+
+    promises.push(docPromise);
+  }
+
+  const docsProcessTime = Date.now() - docsStartTime;
+  if (logPrefix) {
+    console.debug(
+      `${logPrefix} Document processing setup took ${docsProcessTime}ms`
     );
   }
 
+  // Process queries
+  const queriesStartTime = Date.now();
   const queries = bundleSpec.queries || {};
+  const queryCount = Object.keys(queries).length;
+
+  if (logPrefix && queryCount > 0) {
+    console.debug(`${logPrefix} Adding ${queryCount} queries to bundle`);
+  }
+
   for (const qName in queries) {
-    console.debug("bundle.add [query]:", qName);
-    promises.push(
-      buildQuery(db, queries[qName], bundleSpec.params || {}, paramValues)
-        .get()
-        .then((snap) => {
-          bundle.add(qName, snap);
-        })
+    const queryBuildStartTime = Date.now();
+    if (logPrefix) {
+      console.debug(`${logPrefix} bundle.add [query]: ${qName}`);
+    } else {
+      console.debug("bundle.add [query]:", qName);
+    }
+
+    const query = buildQuery(
+      db,
+      queries[qName],
+      bundleSpec.params || {},
+      paramValues
+    );
+    const queryBuildTime = Date.now() - queryBuildStartTime;
+
+    if (logPrefix) {
+      console.debug(`${logPrefix} Query ${qName} built in ${queryBuildTime}ms`);
+    }
+
+    const queryPromise = query.get().then((snap) => {
+      const queryGetTime = Date.now() - queryBuildStartTime;
+      if (logPrefix) {
+        console.debug(
+          `${logPrefix} Query ${qName} executed in ${queryGetTime}ms, returned ${snap.size} documents`
+        );
+      }
+      bundle.add(qName, snap);
+    });
+
+    promises.push(queryPromise);
+  }
+
+  const queriesProcessTime = Date.now() - queriesStartTime;
+  if (logPrefix) {
+    console.debug(
+      `${logPrefix} Query processing setup took ${queriesProcessTime}ms`
+    );
+  }
+
+  // Wait for all promises to resolve
+  const waitStartTime = Date.now();
+  if (logPrefix) {
+    console.debug(
+      `${logPrefix} Waiting for ${promises.length} operations to complete`
     );
   }
 
   await Promise.all(promises);
+
+  const waitTime = Date.now() - waitStartTime;
+  const totalBuildTime = Date.now() - buildStartTime;
+
+  if (logPrefix) {
+    console.debug(`${logPrefix} All operations completed in ${waitTime}ms`);
+    console.debug(
+      `${logPrefix} Total build preparation time: ${totalBuildTime}ms (docs: ${docsProcessTime}ms, queries: ${queriesProcessTime}ms, wait: ${waitTime}ms)`
+    );
+  }
 
   return bundle;
 }

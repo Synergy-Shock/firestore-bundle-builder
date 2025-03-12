@@ -26,11 +26,11 @@ const db = admin.firestore();
 
 // Initialize services
 const specManager = new SpecManager(db, BUNDLESPEC_COLLECTION);
-const bundleBuilder = new BundleBuilder(db);
 const storageService = new StorageService({
   bucketName: BUNDLE_STORAGE_BUCKET,
   storagePrefix: STORAGE_PREFIX,
 });
+const bundleBuilder = new BundleBuilder(db, storageService);
 
 // Create the bundle server
 const bundleServer = new BundleServer(

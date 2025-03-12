@@ -1,3 +1,7 @@
+## Version 0.2.2
+
+Working version
+
 ## Version 0.2.1
 
 Go back to functions v1 and keep NodeJS 22
